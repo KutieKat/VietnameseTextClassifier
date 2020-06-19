@@ -22,6 +22,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(50), unique=True)
     name = db.Column(db.String(50))
+    full_name = db.Column(db.String(50))
+    email = db.Column(db.String(50))
     password = db.Column(db.String(80))
     admin = db.Column(db.Boolean)
     created_at = db.Column(db.DateTime, nullable=False)
@@ -86,6 +88,8 @@ def get_all_users(current_user):
         user_data['id'] = user.id
         user_data['public_id'] = user.public_id
         user_data['name'] = user.name
+        user_data['full_name'] = user.full_name
+        user_data['email'] = user.email
         user_data['password'] = user.password
         user_data['admin'] = user.admin
         user_data['created_at'] = user.created_at
@@ -111,6 +115,8 @@ def get_one_user(current_user, public_id):
     user_data['id'] = user.id
     user_data['public_id'] = user.public_id
     user_data['name'] = user.name
+    user_data['full_name'] = user.full_name
+    user_data['email'] = user.email
     user_data['password'] = user.password
     user_data['admin'] = user.admin
     user_data['created_at'] = user.created_at
@@ -138,6 +144,7 @@ def create_user():
 def update_user(current_user, public_id):
     user = User.query.filter_by(public_id=public_id).first()
     data = request.get_json()
+    is_updated = False
 
     if not user:
         return jsonify({
@@ -145,19 +152,49 @@ def update_user(current_user, public_id):
         })
 
     if data['name'] != '' and != user.name:
+        is_updated = True
         user.name = user.name
+
+    if data['full_name'] != '' and != user.full_name:
+        is_updated = True
+        user.full_name = user.full_name
+
+    if data['email'] != '' and != user.email:
+        is_updated = True
+        user.email = user.email
     
     if data['admin'] != user.admin:
+        is_updated = True
         user.admin = user.admin
 
-    if (data['name'] != '' and != user.name) or data['admin'] != user.admin:
+    if is_updated == True:
         user.updated_at = datetime.datetime.now()
 
     db.session.commit()
 
     return jsonify({
-        'message': 'Update user successfully!',
-        'user': user
+        'message': 'Update user\'s information successfully!'
+    })
+
+@app.route('/user/change-password/<public_id>', methods=['PUT'])
+@token_required
+def update_user(current_user, public_id):
+    user = User.query.filter_by(public_id=public_id).first()
+    data = request.get_json()
+
+    if not user:
+        return jsonify({
+            'message': 'No user found!'
+        })
+
+    if data['old_password'] != '' and data['new_password'] != '' and data['old_password'] == data['new_password']:
+        hashed_password = generate_password_hash(data['new_password'], method='sha256')
+        user.password = hashed_password
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Change user\'s password successfully!'
     })
 
 @app.route('/user/<public_id>', method=['DELETE'])
