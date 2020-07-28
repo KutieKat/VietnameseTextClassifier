@@ -9,6 +9,7 @@ import jwt
 import datetime
 from functools import wraps
 from flask_cors import CORS, cross_origin
+from vietnamese_text_classifier import predict_category
 
 # Constants
 THIS_WEEK = 1
@@ -463,7 +464,7 @@ def get_one_api_call(current_user, api_call_id):
     })
 
 
-@app.route('/api-calls', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 @token_required
 def create_api_call(current_user):
     data = request.get_json()
@@ -482,16 +483,18 @@ def create_api_call(current_user):
             })
         else:
             api_key.remaining_calls = api_key.remaining_calls - 1
+            document = json_data['document']
+            predicting_category = predict_category(document)
 
-            # The returning result is temporarily set to be 'OK', it will be reassigned to the predicting result soon!!
-            new_api_call = APICall(document=data['document'], created_at=datetime.datetime.now(
-            ), result='OK', user_id=current_user.id)
+            new_api_call = APICall(document=document, created_at=datetime.datetime.now(
+            ), result=predicting_category, user_id=current_user.id)
 
             db.session.add(new_api_call)
             db.session.commit()
 
             return jsonify({
-                'message': 'Create new API call successfully!'
+                'message': 'Predict category of the given document successfully!',
+                "predicting_category": predicting_category
             })
 
 # Statistics
