@@ -229,7 +229,7 @@ def get_all_users_with_pagination(current_user):
 @app.route('/api/users/<public_id>', methods=['GET'])
 @token_required
 def get_one_user(current_user, public_id):
-    if current_user.public_id != public_id:
+    if int(current_user.admin) == 0:
         return jsonify({
             'status': 'ERROR',
             'message': 'Không có quyền truy cập!'
@@ -295,7 +295,7 @@ def create_user():
 
     token = jwt.encode({
         'public_id': new_user.public_id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=604800)
     }, app.config['SECRET_KEY'])
 
     user_data = {}
