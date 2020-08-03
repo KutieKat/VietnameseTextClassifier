@@ -6,16 +6,15 @@ import apiRoutes from '../routes/apis';
 import { showNotification } from '../redux/actions';
 import { connect } from 'react-redux';
 import AuthenticatedRoute from '../components/AuthenticatedRoute';
-import { isValidEmail, formatDateString } from '../utils';
+import { isValidEmail } from '../utils';
 
-class UserEdit extends Component {
+class UserCreate extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
       userData: {},
       user: this.props.user,
-      userId: this.props.match.params.id,
       showAlert: false,
       errors: null,
     };
@@ -29,54 +28,10 @@ class UserEdit extends Component {
   };
 
   componentWillReceiveProps(nextProps) {
-    const { fetchData } = this;
-    this.setState(
-      { userId: nextProps.match.params.id, user: nextProps.user },
-      fetchData
-    );
+    this.setState({ user: nextProps.user });
   }
 
-  componentDidMount() {
-    const { fetchData } = this;
-
-    fetchData();
-  }
-
-  fetchData = async () => {
-    const { showErrorNotification } = this;
-
-    try {
-      const headers = {
-        'Content-Type': 'application/json',
-        'x-access-token': this.state.user && this.state.user.token,
-      };
-
-      const { users } = apiRoutes;
-      const userId = this.state.userId;
-      const url = `${users.details}/${userId}`;
-      const response = await axios.get(url, {
-        headers,
-      });
-
-      if (
-        response &&
-        response.status === 200 &&
-        response.data.status === 'SUCCESS'
-      ) {
-        this.setState({
-          userData: response.data.data,
-        });
-      } else {
-        const { message } = response.data;
-
-        console.log(message);
-      }
-    } catch (error) {
-      showErrorNotification('Lấy thông tin của người dùng thất bại!');
-    }
-  };
-
-  update = async () => {
+  create = async () => {
     const { showSuccessNotification, showErrorNotification } = this;
 
     try {
@@ -87,9 +42,8 @@ class UserEdit extends Component {
 
       const { userData } = this.state;
       const { users } = apiRoutes;
-      const userId = this.props.user && this.props.user.id;
-      const url = `${users.profile}/${userId}`;
-      const response = await axios.put(url, userData, { headers });
+      const url = users.register;
+      const response = await axios.post(url, userData, { headers });
 
       if (
         response &&
@@ -98,16 +52,8 @@ class UserEdit extends Component {
       ) {
         const { message } = response.data;
 
-        if (userId === this.state.user.id) {
-          const localUser = JSON.parse(localStorage.getItem('VTC_USER'));
-          localUser['full_name'] = userData.full_name;
-
-          this.props.logIn(localUser);
-          localStorage.setItem('VTC_USER', JSON.stringify(localUser));
-        }
-
-        this.props.history.push('/bang-dieu-khien/nguoi-dung');
         showSuccessNotification(message);
+        this.props.history.push('/bang-dieu-khien/nguoi-dung');
       } else {
         const { errors, message } = response.data;
 
@@ -115,17 +61,17 @@ class UserEdit extends Component {
         showErrorNotification(message);
       }
     } catch (error) {
-      showErrorNotification('Cập nhật thông tin tài khoản thất bại!');
+      showErrorNotification('Thêm tài khoản mới thất bại!');
     }
   };
 
   submit = (e) => {
     e.preventDefault();
-    const { validateFields, update, showErrorNotification } = this;
+    const { validateFields, create, showErrorNotification } = this;
     const errors = validateFields();
 
     if (!errors) {
-      this.setState({ showAlert: false }, update);
+      this.setState({ showAlert: false }, create);
     } else {
       showErrorNotification('Thông tin tài khoản chưa hợp lệ!');
       this.setState({ errors, showAlert: true });
@@ -134,9 +80,18 @@ class UserEdit extends Component {
 
   validateFields = () => {
     const { userData } = this.state;
-    const { email } = userData;
+    const { username, email, password, confirmation_password } = userData;
     let errors = {};
+    let usernameErrors = [];
     let emailErrors = [];
+    let passwordErrors = [];
+    let confirmationPasswordErrors = [];
+
+    if (username === '') {
+      usernameErrors.push(
+        'Tên đăng nhập là thông tin bắt buộc và không được để trống!'
+      );
+    }
 
     if (email === '') {
       emailErrors.push(
@@ -148,6 +103,47 @@ class UserEdit extends Component {
       emailErrors.push('Địa chỉ email không hợp lệ!');
     }
 
+    if (password === '') {
+      passwordErrors.push(
+        'Mật khẩu là thông tin bắt buộc và không được để trống!'
+      );
+    }
+
+    if (confirmation_password === '') {
+      confirmationPasswordErrors.push(
+        'Mật khẩu xác nhận là thông tin bắt buộc và không được để trống!'
+      );
+    }
+
+    if (password !== confirmation_password) {
+      confirmationPasswordErrors.push('Mật khẩu xác nhận chưa trùng khớp!');
+    }
+
+    if (password.length < 6) {
+      passwordErrors.push('Mật khẩu phải có ít nhất 6 ký tự!');
+    }
+
+    if (usernameErrors.length > 0) {
+      errors['username'] = {
+        name: 'Tên đăng nhập',
+        errors: usernameErrors,
+      };
+    }
+
+    if (passwordErrors.length > 0) {
+      errors['password'] = {
+        name: 'Mật khẩu',
+        errors: passwordErrors,
+      };
+    }
+
+    if (confirmationPasswordErrors.length > 0) {
+      errors['confirmation_password'] = {
+        name: 'Mật khẩu xác nhận',
+        errors: confirmationPasswordErrors,
+      };
+    }
+
     if (emailErrors.length > 0) {
       errors['email'] = {
         name: 'Địa chỉ email',
@@ -155,7 +151,12 @@ class UserEdit extends Component {
       };
     }
 
-    return emailErrors.length > 0 ? errors : null;
+    return usernameErrors.length > 0 ||
+      emailErrors.length > 0 ||
+      passwordErrors.length > 0 ||
+      confirmationPasswordErrors.length > 0
+      ? errors
+      : null;
   };
 
   isValidField = (fieldName) => {
@@ -225,7 +226,7 @@ class UserEdit extends Component {
 
               <div className="right-column">
                 <form className="auth-form" onSubmit={submit}>
-                  <h3 className="form__title">Cập nhật thông tin người dùng</h3>
+                  <h3 className="form__title">Thêm người dùng mới</h3>
 
                   <div className="form__main">
                     {showAlert && (
@@ -251,7 +252,16 @@ class UserEdit extends Component {
                       <input
                         type="text"
                         placeholder="Tên đăng nhập"
-                        disabled={true}
+                        autoComplete="off"
+                        onChange={(e) =>
+                          changeUserData('username', e.target.value)
+                        }
+                        className={
+                          isValidField('username')
+                            ? 'form-input-alert'
+                            : 'form-input-outline'
+                        }
+                        onFocus={hideAlert}
                         value={userData.username}
                       />
                     </div>
@@ -314,22 +324,43 @@ class UserEdit extends Component {
                     </div>
 
                     <div className="form-group">
-                      <label>Thời gian tạo</label>
+                      <label>Mật khẩu</label>
                       <input
-                        type="text"
-                        placeholder="Thời gian tạo"
-                        disabled={true}
-                        value={formatDateString(userData.created_at)}
+                        type="password"
+                        placeholder="Nhập mật khẩu"
+                        value={userData && userData.password}
+                        onChange={(e) =>
+                          changeUserData('password', e.target.value)
+                        }
+                        autoComplete="off"
+                        className={
+                          isValidField('password')
+                            ? 'form-input-alert'
+                            : 'form-input-outline'
+                        }
+                        onFocus={hideAlert}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Thời gian cập nhật cuối</label>
+                      <label>Xác nhận lại mật khẩu</label>
                       <input
-                        type="text"
-                        placeholder="Thời gian cập nhật cuối"
-                        disabled={true}
-                        value={formatDateString(userData.updated_at)}
+                        type="password"
+                        placeholder="Xác nhận lại mật khẩu"
+                        value={userData && userData.confirmation_password}
+                        onChange={(e) =>
+                          changeUserData(
+                            'confirmation_password',
+                            e.target.value
+                          )
+                        }
+                        autoComplete="off"
+                        className={
+                          isValidField('confirmation_password')
+                            ? 'form-input-alert'
+                            : 'form-input-outline'
+                        }
+                        onFocus={hideAlert}
                       />
                     </div>
 
@@ -342,7 +373,7 @@ class UserEdit extends Component {
                         Trở về
                       </Link>
                       <button type="submit" className="button">
-                        Cập nhật
+                        Thêm mới
                       </button>
                     </div>
                   </div>
@@ -361,5 +392,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default withRouter(
-  connect(mapStateToProps, { showNotification })(UserEdit)
+  connect(mapStateToProps, { showNotification })(UserCreate)
 );
