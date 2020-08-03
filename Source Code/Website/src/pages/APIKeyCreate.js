@@ -7,67 +7,74 @@ import { showNotification } from '../redux/actions';
 import { connect } from 'react-redux';
 import AuthenticatedRoute from '../components/AuthenticatedRoute';
 
-class UserDelete extends Component {
+class APIKeyCreate extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      userData: {},
-      user: {},
-      userId: this.props.match.params.id,
+      apiKey: {
+        user_id: '',
+        remaining_calls: 100,
+      },
+      user: this.props.user,
     };
   }
 
   componentDidMount() {
-    const { fetchData } = this;
+    const { fetchUsers } = this;
 
-    fetchData();
+    fetchUsers();
   }
+
+  changeData = (fieldName, value) => {
+    const apiKey = { ...this.state.apiKey };
+    apiKey[fieldName] = value;
+
+    this.setState({ apiKey });
+  };
 
   componentWillReceiveProps(nextProps) {
-    const { fetchData } = this;
+    const { fetchUsers } = this;
 
-    this.setState(
-      {
-        userId: nextProps.match.params.id,
-        user: nextProps.user,
-      },
-      fetchData
-    );
+    this.setState({ user: nextProps.user }, fetchUsers);
   }
 
-  fetchData = async () => {
-    const { showErrorNotification } = this;
+  create = async () => {
+    const { showSuccessNotification, showErrorNotification } = this;
 
     try {
       const headers = {
         'Content-Type': 'application/json',
-        'x-access-token': this.state.user && this.state.user.token,
+        'x-access-token': this.props.user && this.props.user.token,
       };
 
-      const { users } = apiRoutes;
-      const userId = this.state.userId;
-      const url = `${users.details}/${userId}`;
-      const response = await axios.get(url, {
-        headers,
-      });
+      const { apiKey } = this.state;
+      const { apiKeys } = apiRoutes;
+      const url = apiKeys.createForUser;
+      const response = await axios.post(url, apiKey, { headers });
 
       if (
         response &&
         response.status === 200 &&
         response.data.status === 'SUCCESS'
       ) {
-        this.setState({
-          userData: response.data.data,
-        });
+        const { message } = response.data;
+
+        showSuccessNotification(message);
+        this.props.history.push('/bang-dieu-khien/api-key');
       } else {
         const { message } = response.data;
 
-        console.log(message);
+        showErrorNotification(message);
       }
     } catch (error) {
-      showErrorNotification('Lấy thông tin của người dùng thất bại!');
+      showErrorNotification('Thêm API key mới thất bại!');
     }
+  };
+
+  submit = (e) => {
+    e.preventDefault();
+    this.create();
   };
 
   showSuccessNotification = (message) => {
@@ -82,9 +89,7 @@ class UserDelete extends Component {
     showNotification('error', message);
   };
 
-  deleteUser = async () => {
-    const { showErrorNotification, showSuccessNotification } = this;
-
+  fetchUsers = async () => {
     try {
       const headers = {
         'Content-Type': 'application/json',
@@ -92,9 +97,9 @@ class UserDelete extends Component {
       };
 
       const { users } = apiRoutes;
-      const userId = this.state.userId;
-      const url = `${users.delete}/${userId}`;
-      const response = await axios.delete(url, {
+      let url = users.listAll;
+
+      const response = await axios.get(url, {
         headers,
       });
 
@@ -103,22 +108,29 @@ class UserDelete extends Component {
         response.status === 200 &&
         response.data.status === 'SUCCESS'
       ) {
-        const { message } = response.data;
+        const { data } = response.data;
+        const { users } = data;
 
-        showSuccessNotification(message);
-        this.props.history.push('/bang-dieu-khien/nguoi-dung');
+        this.setState({
+          users,
+          apiKey: {
+            ...this.state.apiKey,
+            user_id: users[0].id,
+          },
+        });
       } else {
         const { message } = response.data;
 
         console.log(message);
       }
     } catch (error) {
-      showErrorNotification('Xóa người dùng khỏi hệ thống thất bại!');
+      console.log(error);
     }
   };
 
   render() {
-    const { deleteUser } = this;
+    const { changeData, submit } = this;
+    const { apiKey, users } = this.state;
 
     return (
       <Layout>
@@ -159,31 +171,55 @@ class UserDelete extends Component {
               </div>
 
               <div className="right-column">
-                <div className="auth-form">
-                  <h3 className="form__title">Xóa người dùng</h3>
+                <form className="auth-form" onSubmit={submit}>
+                  <h3 className="form__title">Thêm API key mới</h3>
+                  <div className="form-group">
+                    <label>Người dùng</label>
+                    <select
+                      onChange={(e) =>
+                        changeData('user_id', parseInt(e.target.value))
+                      }
+                      value={apiKey.user_id}
+                      style={{
+                        width: '100%',
+                        padding: '16px',
+                        marginBottom: '12px',
+                        fontSize: '15px',
+                      }}
+                    >
+                      {users &&
+                        users.map((user) => (
+                          <option value={user.id}>
+                            {user.full_name} ({user.username})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
 
-                  <p>
-                    Bạn có chắc chắn muốn xóa người dùng{' '}
-                    <strong>
-                      {this.state.userData &&
-                        (this.state.userData.full_name ||
-                          this.state.userData.username)}
-                    </strong>{' '}
-                    khỏi hệ thống hay không?
-                  </p>
+                  <div className="form-group">
+                    <label>Số request còn lại</label>
+                    <input
+                      type="number"
+                      onChange={(e) =>
+                        changeData('remaining_calls', parseInt(e.target.value))
+                      }
+                      value={apiKey.remaining_calls}
+                    />
+                  </div>
+
                   <div className="buttons">
                     <Link
-                      to="/bang-dieu-khien/nguoi-dung"
+                      to="/bang-dieu-khien/api-key"
                       className="button"
                       style={{ marginRight: '10px' }}
                     >
                       Trở về
                     </Link>
-                    <button className="button" onClick={() => deleteUser()}>
-                      Đồng ý
+                    <button type="submit" className="button">
+                      Thêm mới
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>
@@ -198,5 +234,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default withRouter(
-  connect(mapStateToProps, { showNotification })(UserDelete)
+  connect(mapStateToProps, { showNotification })(APIKeyCreate)
 );

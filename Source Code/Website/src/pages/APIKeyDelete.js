@@ -6,32 +6,34 @@ import apiRoutes from '../routes/apis';
 import { showNotification } from '../redux/actions';
 import { connect } from 'react-redux';
 import AuthenticatedRoute from '../components/AuthenticatedRoute';
-import { formatDateString } from '../utils';
 
-class RequestView extends Component {
+class APIKeyDelete extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      request: {},
-      user: this.props.user,
-      requestId: this.props.match.params.id,
+      apiKey: {},
+      user: {},
+      apiKeyId: this.props.match.params.id,
     };
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const { fetchData } = this;
-
-    this.setState(
-      { requestId: nextProps.match.params.id, user: nextProps.user },
-      fetchData
-    );
   }
 
   componentDidMount() {
     const { fetchData } = this;
 
     fetchData();
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const { fetchData } = this;
+
+    this.setState(
+      {
+        apiKeyId: nextProps.match.params.id,
+        user: nextProps.user,
+      },
+      fetchData
+    );
   }
 
   fetchData = async () => {
@@ -43,9 +45,9 @@ class RequestView extends Component {
         'x-access-token': this.state.user && this.state.user.token,
       };
 
-      const { apiCalls } = apiRoutes;
-      const requestId = this.state.requestId;
-      const url = `${apiCalls.details}/${requestId}`;
+      const { apiKeys } = apiRoutes;
+      const apiKeyId = this.state.apiKeyId;
+      const url = `${apiKeys.details}/${apiKeyId}`;
       const response = await axios.get(url, {
         headers,
       });
@@ -56,7 +58,7 @@ class RequestView extends Component {
         response.data.status === 'SUCCESS'
       ) {
         this.setState({
-          request: response.data.data,
+          apiKey: response.data.data,
         });
       } else {
         const { message } = response.data;
@@ -64,7 +66,7 @@ class RequestView extends Component {
         console.log(message);
       }
     } catch (error) {
-      showErrorNotification('Lấy thông tin của request thất bại!');
+      showErrorNotification('Lấy thông tin của API key thất bại!');
     }
   };
 
@@ -80,8 +82,43 @@ class RequestView extends Component {
     showNotification('error', message);
   };
 
+  deleteAPIKey = async () => {
+    const { showErrorNotification, showSuccessNotification } = this;
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-access-token': this.state.user && this.state.user.token,
+      };
+
+      const { apiKeys } = apiRoutes;
+      const apiKeyId = this.state.apiKeyId;
+      const url = `${apiKeys.delete}/${apiKeyId}`;
+      const response = await axios.delete(url, {
+        headers,
+      });
+
+      if (
+        response &&
+        response.status === 200 &&
+        response.data.status === 'SUCCESS'
+      ) {
+        const { message } = response.data;
+
+        showSuccessNotification(message);
+        this.props.history.push('/bang-dieu-khien/api-key');
+      } else {
+        const { message } = response.data;
+
+        console.log(message);
+      }
+    } catch (error) {
+      showErrorNotification('Xóa API key khỏi hệ thống thất bại!');
+    }
+  };
+
   render() {
-    const { request } = this.state;
+    const { deleteAPIKey } = this;
 
     return (
       <Layout>
@@ -122,68 +159,29 @@ class RequestView extends Component {
               </div>
 
               <div className="right-column">
-                <form className="auth-form">
-                  <h3 className="form__title">Xem thông tin request</h3>
+                <div className="auth-form">
+                  <h3 className="form__title">Xóa API Key</h3>
 
-                  <div className="form__main">
-                    <div className="form-group">
-                      <label>Người dùng</label>
-                      <input
-                        type="text"
-                        placeholder="Tên người dùng"
-                        disabled={true}
-                        value={
-                          (request.user && request.user.full_name) ||
-                          (request.user && request.user.username)
-                        }
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>API key</label>
-                      <input
-                        type="text"
-                        placeholder="API key"
-                        disabled={true}
-                        value={request.api_key}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Nội dung văn bản</label>
-                      <textarea
-                        disabled={true}
-                        rows={5}
-                        placeholder="Nội dung của văn bản"
-                        value={request.document}
-                      ></textarea>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Chủ đề được phân loại</label>
-                      <input
-                        type="text"
-                        placeholder="Chủ đề được phân loại"
-                        disabled={true}
-                        value={request.result}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Thời gian gọi</label>
-                      <input
-                        type="text"
-                        placeholder="Thời gian gọi"
-                        disabled={true}
-                        value={formatDateString(request.created_at)}
-                      />
-                    </div>
-
-                    <Link to="/bang-dieu-khien/request" className="button">
+                  <p>
+                    Bạn có chắc chắn muốn xóa API key{' '}
+                    <strong>
+                      {this.state.apiKey && this.state.apiKey.generated_key}
+                    </strong>{' '}
+                    khỏi hệ thống hay không?
+                  </p>
+                  <div className="buttons">
+                    <Link
+                      to="/bang-dieu-khien/api-key"
+                      className="button"
+                      style={{ marginRight: '10px' }}
+                    >
                       Trở về
                     </Link>
+                    <button className="button" onClick={() => deleteAPIKey()}>
+                      Đồng ý
+                    </button>
                   </div>
-                </form>
+                </div>
               </div>
             </div>
           </div>
@@ -198,5 +196,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default withRouter(
-  connect(mapStateToProps, { showNotification })(RequestView)
+  connect(mapStateToProps, { showNotification })(APIKeyDelete)
 );
