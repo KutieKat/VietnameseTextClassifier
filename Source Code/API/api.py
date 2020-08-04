@@ -889,22 +889,36 @@ def create_api_call():
         else:
             api_key.remaining_calls = api_key.remaining_calls - 1
             document = data['document']
-            predicting_category = predict_category(document)
 
-            new_api_call = APICall(document=document, created_at=datetime.datetime.now(
-            ), result=predicting_category, user_id=api_key.user_id)
+            if len(document.strip()) > 0:
+                predicting_category = predict_category(document)
 
-            db.session.add(new_api_call)
-            db.session.commit()
+                new_api_call = APICall(document=document, created_at=datetime.datetime.now(
+                ), result=predicting_category, user_id=api_key.user_id)
 
-            data = {}
-            data['predicting_category'] = predicting_category
+                db.session.add(new_api_call)
+                db.session.commit()
 
-            return jsonify({
-                'status': 'SUCCESS',
-                'message': 'Dự đoán chủ đề của văn bản thành công!',
-                'data': data
-            })
+                data = {}
+                data['predicting_category'] = predicting_category
+
+                return jsonify({
+                    'status': 'SUCCESS',
+                    'message': 'Dự đoán chủ đề của văn bản thành công!',
+                    'data': data
+                })
+            else:
+                errors = {}
+                errors['document'] = {}
+                errors['document']['name'] = 'Văn bản cần phân loại'
+                errors['document']['errors'] = [
+                    'Văn bản cần phân loại không được bỏ trống']
+
+                return jsonify({
+                    'status': 'ERROR',
+                    'message': 'Dự đoán chủ đề của văn bản thất bại!',
+                    'errors': errors
+                })
 
 # Statistics
 
