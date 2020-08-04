@@ -13,7 +13,9 @@ class UserEdit extends Component {
     super(props);
 
     this.state = {
-      userData: {},
+      userData: {
+        admin: 0,
+      },
       user: this.props.user,
       userId: this.props.match.params.id,
       showAlert: false,
