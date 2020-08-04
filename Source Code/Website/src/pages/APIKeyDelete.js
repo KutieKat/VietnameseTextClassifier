@@ -159,28 +159,26 @@ class APIKeyDelete extends Component {
               </div>
 
               <div className="right-column">
-                <div className="auth-form">
-                  <h3 className="form__title">Xóa API Key</h3>
+                <h3 className="form__title">Xóa API Key</h3>
 
-                  <p>
-                    Bạn có chắc chắn muốn xóa API key{' '}
-                    <strong>
-                      {this.state.apiKey && this.state.apiKey.generated_key}
-                    </strong>{' '}
-                    khỏi hệ thống hay không?
-                  </p>
-                  <div className="buttons">
-                    <Link
-                      to="/bang-dieu-khien/api-key"
-                      className="button"
-                      style={{ marginRight: '10px' }}
-                    >
-                      Trở về
-                    </Link>
-                    <button className="button" onClick={() => deleteAPIKey()}>
-                      Đồng ý
-                    </button>
-                  </div>
+                <p>
+                  Bạn có chắc chắn muốn xóa API key{' '}
+                  <strong>
+                    {this.state.apiKey && this.state.apiKey.generated_key}
+                  </strong>{' '}
+                  khỏi hệ thống hay không?
+                </p>
+                <div className="buttons" style={{ marginTop: '12px' }}>
+                  <Link
+                    to="/bang-dieu-khien/api-key"
+                    className="button"
+                    style={{ marginRight: '10px' }}
+                  >
+                    Trở về
+                  </Link>
+                  <button className="button" onClick={() => deleteAPIKey()}>
+                    Đồng ý
+                  </button>
                 </div>
               </div>
             </div>

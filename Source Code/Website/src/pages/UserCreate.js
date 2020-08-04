@@ -13,7 +13,9 @@ class UserCreate extends Component {
     super(props);
 
     this.state = {
-      userData: {},
+      userData: {
+        admin: 0,
+      },
       user: this.props.user,
       showAlert: false,
       errors: null,

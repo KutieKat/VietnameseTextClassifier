@@ -18,7 +18,8 @@ class App extends Component {
             điện tử thường làm. Việc này có thể được thực hiện thủ công bởi các
             biên tập viên tuy nhiên đòi hỏi phải tiêu tốn nhiều thời gian và
             công sức. <strong>VietnameseTextClassifier</strong> là giải pháp
-            giúp phân loại văn bản tiếng Việt một cách nhanh chóng và hiệu quả.
+            giúp tự động phân loại văn bản tiếng Việt một cách nhanh chóng và
+            hiệu quả.
           </p>
           <div>
             <Link to="/gioi-thieu" className="button button-outlined">

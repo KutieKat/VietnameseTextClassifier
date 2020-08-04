@@ -60,11 +60,11 @@ class Header extends Component {
               (this.state.user.full_name || this.state.user.username)}
             !
             <ul className="header__dropdown-list">
-              {/* {!isEmptyObj(this.state.user) && this.state.user.admin === 1 && ( */}
-              <li className="header__dropdown-list-item">
-                <Link to="/bang-dieu-khien/tong-quan">Bảng điều khiển</Link>
-              </li>
-              {/* )} */}
+              {!isEmptyObj(this.state.user) && this.state.user.admin === 1 && (
+                <li className="header__dropdown-list-item">
+                  <Link to="/bang-dieu-khien/tong-quan">Bảng điều khiển</Link>
+                </li>
+              )}
               <li className="header__dropdown-list-item">
                 <Link to="/tai-khoan">Cập nhật thông tin</Link>
               </li>
