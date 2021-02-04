@@ -38,7 +38,3 @@
 * NodeJS 12.17.0
 * Python 3.8.3
 * Microsoft Visual Code 1.47.3
-
-## Đội ngũ phát triển
-* [Nguyễn Tiến Dũng](https://github.com/KutieKat) (MSSV: 16520259)
-* [Nguyễn Việt Tiến](https://github.com/viettiennguyen029) (MSSV: 16521233)
